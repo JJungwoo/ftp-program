@@ -1,16 +1,35 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#include <string.h>
+
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+
+#include <signal.h>
+
+#include <errno.h>
+
 #include "ftp_server.h"
 
 conn gconn;
 
 void print_info()
 {
-	//printf("============================= \n");
-	printf("##################### \n");
-	printf("#    ftp server     # \n");
-	printf("##################### \n");
-	//printf("============================= \n");
-	printf("-h : Help to ftp agent usage \n");
-	printf("-v : Confirm to ftp agent version \n");
+	static const char *help = 
+	"================================ \n"
+	"|          ftp server          | \n"
+	"================================ \n"
+	"usage: ftp-server [-option] \n"
+	"-h : Help to ftp agent usage \n"
+	"-v : Confirm to ftp agent version \n"
+	"-d : Execute to ftp server daemon \n"
+	"-c : Create to ftp server user \n"
+	"-p : Setting ftp server port \n";
+
+	fputs(help, stdout);
 }
 
 int create_socket()
@@ -74,12 +93,6 @@ void signal_handler(int signo)
 int main(int argc, char **argv)
 {
 	int ret = 0;
-	if (argc-1 <= 0)
-	{
-		printf("bad usage\n");
-		print_info();
-		return OK;
-	}
 
 	for(int i=0;i<argc;i++)
 	{

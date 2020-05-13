@@ -7,7 +7,7 @@ SRC = ftp_client.c
 BUILD = build/
 OUTPUT = $(BUILD)/ftp_client.o $(BUILD)/common.o
 
-COMMON_DIR = ../../common
+COMMON_DIR = ../common
 COMMON_SRC = $(COMMON_DIR)/common.c
 
 INC_DIRS = $(COMMON)
