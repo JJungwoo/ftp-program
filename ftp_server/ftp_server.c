@@ -9,12 +9,16 @@
 #include <arpa/inet.h>
 
 #include <signal.h>
-
+#include <pthread.h>
 #include <errno.h>
 
 #include "ftp_server.h"
 
 conn gconn;
+
+pthread_t p_thread;
+int thr_id;
+int exit_process = 0;
 
 void print_info()
 {
@@ -30,6 +34,55 @@ void print_info()
 	"-p : Setting ftp server port \n";
 
 	fputs(help, stdout);
+}
+
+void *send_thread(void *data)
+{
+	pid_t pid;
+	pthread_t tid;
+
+	pid = getpid();
+	tid = pthread_self();
+
+	printf("[send_thread] pid: %u, tid:%x \n", (unsigned int)pid, (unsigned int)tid);
+
+	while(1)
+	{
+		printf("Listening...\n");
+		gconn.send_sockfd = accept(gconn.recv_sockfd, 
+			(struct sockaddr*)&gconn.recvaddr, (socklen_t *)&gconn.recv_addr_len);
+
+		if(gconn.send_sockfd == FAIL)
+		{
+			printf("accept failed (ret:%d)(errno:%d) \n", gconn.send_sockfd, errno);
+			pthread_exit(NULL);
+			//return FAIL;
+		}
+
+		if(exit_process)
+		{
+			printf("exit send_thread: %d\n", exit_process);
+			break;
+		}
+
+		printf("Connected Client \n");
+	}
+	
+	pthread_exit(NULL);
+}
+
+int run_process()
+{
+	printf("run_process \n");
+
+	thr_id = pthread_create(&p_thread, NULL, send_thread, (void *)NULL);
+	if(thr_id < 0)
+	{
+		printf("thread create error : %d \n", errno);
+		exit(0);
+	}
+
+	return OK;
 }
 
 int create_socket()
@@ -93,7 +146,21 @@ void signal_handler(int signo)
 int main(int argc, char **argv)
 {
 	int ret = 0;
+	int c = 0; 
 
+
+	while((c = getopt(argc, argv, "h")) != -1) {
+		switch(c) {
+			case 'h':
+			print_info();
+			return OK;
+			break;
+			case 'p':
+			break;
+		}
+	}
+
+/*
 	for(int i=0;i<argc;i++)
 	{
 		if(*argv[i] == '-')
@@ -105,9 +172,9 @@ int main(int argc, char **argv)
 				return OK;
 				break;
 			}
-		}
-		
+		}		
 	}
+*/
 
 	signal(SIGINT, signal_handler);
 
@@ -126,22 +193,12 @@ int main(int argc, char **argv)
 		return FAIL;
 	}
 
-	printf("No execute to target server \n");
+	run_process();	
+		
+	printf("test\n");
+	exit_process = 1;
 
-	while(1)
-	{
-		printf("Listening...\n");
-		gconn.send_sockfd = accept(gconn.recv_sockfd, 
-			(struct sockaddr*)&gconn.recvaddr, (socklen_t *)&gconn.recv_addr_len);
-
-		if(gconn.send_sockfd == FAIL)
-		{
-			printf("accept failed (ret:%d)(errno:%d) \n", gconn.send_sockfd, errno);
-			return FAIL;
-		}
-
-		printf("Connected Client \n");
-	}
+	pthread_join(p_thread, NULL);
 
 	close_socket();
 
