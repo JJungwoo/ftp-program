@@ -16,6 +16,8 @@ typedef struct ftp_conn_st{
 	int send_sockfd;
 	struct sockaddr_in sendaddr;
 
+	int port;
+
 	char buffer[BUF_LEN];
 }conn;
 

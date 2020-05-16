@@ -27,8 +27,8 @@ void print_info()
 	"|          ftp server          | \n"
 	"================================ \n"
 	"usage: ftp-server [-option] \n"
-	"-h : Help to ftp agent usage \n"
-	"-v : Confirm to ftp agent version \n"
+	"-h : Help to ftp server usage \n"
+	"-v : Confirm to ftp server version \n"
 	"-d : Execute to ftp server daemon \n"
 	"-c : Create to ftp server user \n"
 	"-p : Setting ftp server port \n";
@@ -56,8 +56,10 @@ void *send_thread(void *data)
 		{
 			printf("accept failed (ret:%d)(errno:%d) \n", gconn.send_sockfd, errno);
 			pthread_exit(NULL);
-			//return FAIL;
 		}
+
+		read(gconn.send_sockfd, gconn.buffer, BUF_LEN);
+		printf("recv buf: %s ", gconn.buffer);
 
 		if(exit_process)
 		{
@@ -102,13 +104,13 @@ int create_socket()
 	return ret;
 }
 
-int create_conn_st(int port)
+int create_conn_st()
 {
 	int ret = 0;
-
+	printf("create_conn_st - port: %d \n", gconn.port);
 	memset(&gconn.recvaddr, 0, sizeof(gconn.recvaddr));
 	gconn.recvaddr.sin_family = AF_INET;
-	gconn.recvaddr.sin_port = htons(port);
+	gconn.recvaddr.sin_port = htons(gconn.port);
 	gconn.recvaddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	//gconn.recvaddr.sin_addr.s_addr = htonl(atoi("127.0.0.1"));
 
@@ -133,6 +135,7 @@ int create_conn_st(int port)
 
 void close_socket()
 {
+	exit_process = 1;
 	close(gconn.recv_sockfd);
 }
 
@@ -145,17 +148,18 @@ void signal_handler(int signo)
 
 int main(int argc, char **argv)
 {
-	int ret = 0;
-	int c = 0; 
+	int ret = 0, c = 0; 
+	int option = 0;
 
-
-	while((c = getopt(argc, argv, "h")) != -1) {
+	while((c = getopt(argc, argv, "hp:")) != -1) {
 		switch(c) {
 			case 'h':
 			print_info();
 			return OK;
 			break;
 			case 'p':
+			gconn.port = atoi(optarg);
+			option = 1;
 			break;
 		}
 	}
@@ -175,6 +179,11 @@ int main(int argc, char **argv)
 		}		
 	}
 */
+	if(option == 0)
+	{
+		print_info();
+		exit(0);
+	}
 
 	signal(SIGINT, signal_handler);
 
@@ -182,21 +191,19 @@ int main(int argc, char **argv)
 	if(ret == FAIL) 
 	{
 		printf("create socker failed (ret:%d) \n", ret);
-		return FAIL;
+		exit(0);
 	}
 
-
-	ret = create_conn_st(9999);
+	ret = create_conn_st();
 	if(ret == FAIL) 
 	{
 		printf("create_conn_st failed (ret:%d) \n", ret);
-		return FAIL;
+		exit(0);
 	}
 
 	run_process();	
 		
 	printf("test\n");
-	exit_process = 1;
 
 	pthread_join(p_thread, NULL);
 

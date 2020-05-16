@@ -1,19 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
 
-#include <string.h>
-
-// conn
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <unistd.h>
-#include <arpa/inet.h>
-
-// signal
-#include <signal.h>
-
-// error
-#include <errno.h>
 
 #define BUF_LEN 1024
 
@@ -33,6 +18,8 @@ typedef struct pear_conn_st{
 	struct sockaddr_in sendaddr;
 
 	char buffer[BUF_LEN];
+
+	int port;
 }conn;
 
 

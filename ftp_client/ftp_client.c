@@ -1,16 +1,35 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#include <string.h>
+
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+
+#include <signal.h>
+
+#include <errno.h>
+
 #include "ftp_client.h"
 
 conn gconn;
 
 void print_info()
 {
-	//printf("============================= \n");
-	printf("##################### \n");
-	printf("#    ftp server     # \n");
-	printf("##################### \n");
-	//printf("============================= \n");
-	printf("-h : Help to p2p agent usage \n");
-	printf("-v : Confirm to p2p agent version \n");
+	static const char *help = 
+	"================================ \n"
+	"|          ftp client          | \n"
+	"================================ \n"
+	"usage: ftp-client [-option] \n"
+	"-h : Help to ftp client usage \n"
+	"-v : Confirm to ftp client version \n"
+	"-d : Execute to ftp client daemon \n"
+	"-c : Create to ftp client user \n"
+	"-p : Setting ftp client port \n";
+
+	fputs(help, stdout);
 }
 
 int create_socket()
@@ -30,31 +49,16 @@ int create_socket()
 	return ret;
 }
 
-int create_conn_st(int port)
+int create_conn_st()
 {
 	int ret = 0;
 
 	memset(&gconn.recvaddr, 0, sizeof(gconn.recvaddr));
 	gconn.recvaddr.sin_family = AF_INET;
-	gconn.recvaddr.sin_port = htons(port);
-	gconn.recvaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	//gconn.recvaddr.sin_addr.s_addr = htonl(atoi("127.0.0.1"));
+	gconn.recvaddr.sin_port = htons(gconn.port);
+	gconn.recvaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
 
 	gconn.recv_addr_len = sizeof(gconn.sendaddr);
-
-	ret = bind(gconn.recv_sockfd, (struct sockaddr*)&gconn.recvaddr, sizeof(gconn.recvaddr));
-	if(ret == FAIL)
-	{
-		printf("[create_conn_st] bind failed (ret:%d) %d \n", ret, errno);
-		return FAIL;
-	}
-
-	ret = listen(gconn.recv_sockfd, 5);
-	if(ret == FAIL)
-	{
-		printf("[create_conn_st] listen failed (ret:%d) \n", ret);
-		return FAIL;
-	}
 
 	return ret;
 }
@@ -73,52 +77,58 @@ void signal_handler(int signo)
 
 int main(int argc, char **argv)
 {
-	int ret = 0;
-	if (argc-1 <= 0)
-	{
-		printf("bad usage\n");
-		print_info();
-		return OK;
+	int ret = 0, c = 0; 
+	int option = 0;
+
+	while((c = getopt(argc, argv, "hp:")) != -1) {
+		switch(c) {
+			case 'h':
+			print_info();
+			return OK;
+			break;
+			case 'p':
+			gconn.port = atoi(optarg);
+			option = 1;
+			break;
+		}
 	}
 
-	for(int i=0;i<argc;i++)
+	if(option == 0)
 	{
-		if(*argv[i] == '-')
-		{
-			switch(*(argv[i]+1))
-			{
-				case 'h':
-				print_info();
-				return OK;
-				break;
-			}
-		}
-		
+		print_info();
+		exit(0);
 	}
 
 	signal(SIGINT, signal_handler);
-	/*while(1){
-		printf("TEST\n");
-		sleep(10);
-	}*/
 
 	ret = create_socket();
 	if(ret == FAIL) 
 	{
 		printf("create socker failed (ret:%d) \n", ret);
-		return FAIL;
+		exit(0);
 	}
 
 	printf("%d \n", gconn.recv_sockfd);
 
+	ret = create_conn_st();
+	if(ret == FAIL) 
+	{
+		printf("create_conn_st failed (ret:%d) \n", ret);
+		exit(0);
+	}
+	printf("!!\n");
 	ret = connect(gconn.recv_sockfd, (struct sockaddr*)&gconn.recvaddr, sizeof(gconn.recvaddr));
 	if(ret == FAIL) {
+		perror("fail ..\n");
+		printf("FAIL\n");
 		close_socket(gconn.recv_sockfd);
 	}
 	else {
 		printf("Connected Success \n");
 	}
 
+	send(gconn.recv_sockfd, "TEST", strlen(gconn.buffer), 0);
+	
 	close_socket();
 
 	return 0;
