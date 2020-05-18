@@ -22,4 +22,4 @@ typedef struct pear_conn_st{
 	int port;
 }conn;
 
-
+char cmdbuf[BUF_LEN];

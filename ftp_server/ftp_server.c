@@ -18,7 +18,7 @@ conn gconn;
 
 pthread_t p_thread;
 int thr_id;
-int exit_process = 0;
+int exit_process;
 
 void print_info()
 {
@@ -45,21 +45,28 @@ void *send_thread(void *data)
 	tid = pthread_self();
 
 	printf("[send_thread] pid: %u, tid:%x \n", (unsigned int)pid, (unsigned int)tid);
-
-	while(1)
+	
+	gconn.send_sockfd = accept(gconn.recv_sockfd, 
+		(struct sockaddr*)&gconn.recvaddr, (socklen_t *)&gconn.recv_addr_len);
+	
+	if(gconn.send_sockfd == FAIL)
 	{
-		printf("Listening...\n");
-		gconn.send_sockfd = accept(gconn.recv_sockfd, 
-			(struct sockaddr*)&gconn.recvaddr, (socklen_t *)&gconn.recv_addr_len);
+		printf("accept failed (ret:%d)(errno:%d) \n", gconn.send_sockfd, errno);
+		exit_process = 1;
+	}
 
-		if(gconn.send_sockfd == FAIL)
-		{
-			printf("accept failed (ret:%d)(errno:%d) \n", gconn.send_sockfd, errno);
-			pthread_exit(NULL);
-		}
+	while(!exit_process)
+	{
+		printf("Listening... %d \n", gconn.send_sockfd);
 
 		read(gconn.send_sockfd, gconn.buffer, BUF_LEN);
+		
 		printf("recv buf: %s ", gconn.buffer);
+		
+		if(!strcmp(gconn.buffer, "exit")) {
+			exit_process = 1;
+			break;
+		}
 
 		if(exit_process)
 		{
@@ -203,11 +210,11 @@ int main(int argc, char **argv)
 
 	run_process();	
 		
-	printf("test\n");
-
 	pthread_join(p_thread, NULL);
 
 	close_socket();
+
+	printf("exit process\n");
 
 	return 0;
 }

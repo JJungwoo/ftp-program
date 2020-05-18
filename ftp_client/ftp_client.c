@@ -15,6 +15,8 @@
 #include "ftp_client.h"
 
 conn gconn;
+int terminal_mode;
+int exit_process;
 
 void print_info()
 {
@@ -95,8 +97,10 @@ int main(int argc, char **argv)
 
 	if(option == 0)
 	{
-		print_info();
-		exit(0);
+		//print_info();
+		gconn.port = 9999;
+		terminal_mode = 1;
+		//exit(0);
 	}
 
 	signal(SIGINT, signal_handler);
@@ -108,7 +112,7 @@ int main(int argc, char **argv)
 		exit(0);
 	}
 
-	printf("%d \n", gconn.recv_sockfd);
+	printf("get sockfd:%d \n", gconn.recv_sockfd);
 
 	ret = create_conn_st();
 	if(ret == FAIL) 
@@ -116,7 +120,7 @@ int main(int argc, char **argv)
 		printf("create_conn_st failed (ret:%d) \n", ret);
 		exit(0);
 	}
-	printf("!!\n");
+
 	ret = connect(gconn.recv_sockfd, (struct sockaddr*)&gconn.recvaddr, sizeof(gconn.recvaddr));
 	if(ret == FAIL) {
 		perror("fail ..\n");
@@ -127,7 +131,40 @@ int main(int argc, char **argv)
 		printf("Connected Success \n");
 	}
 
-	send(gconn.recv_sockfd, "TEST", strlen(gconn.buffer), 0);
+
+	if(terminal_mode){
+		while(!exit_process) {
+			printf("ftp>");
+			fgets(cmdbuf, BUF_LEN, stdin);
+			//fprintf(stderr, "ftp>%s \n", cmdbuf);
+			if(!strcmp(cmdbuf, "exit\n") || !strcmp(cmdbuf, "quit\n")){
+				exit_process = 1;
+			}else if(!strcmp(cmdbuf, "get\n")){	// 파일 다운
+				printf("get! %s\n", cmdbuf);
+				fgets(cmdbuf, BUF_LEN, stdin);
+				send(gconn.recv_sockfd, cmdbuf, strlen(gconn.buffer), 0);
+				send(gconn.recv_sockfd, "test1", strlen(gconn.buffer), 0);
+				send(gconn.recv_sockfd, "test2", strlen(gconn.buffer), 0);
+
+			}else if(!strcmp(cmdbuf, "put\n")){	// 파일 업로드
+
+			}else if(!strcmp(cmdbuf, "pwd\n")){
+
+			}else if(!strcmp(cmdbuf, "ls\n")){
+				
+			}else if(!strcmp(cmdbuf, "cd\n")){
+				
+			}else if(!strcmp(cmdbuf, "help\n")){
+				
+			}
+
+		}
+	}
+	else {
+
+		
+		
+	}
 	
 	close_socket();
 
