@@ -38,44 +38,95 @@ void print_info()
 
 void *send_thread(void *data)
 {
+	int sock_cnt = 0;
 	pid_t pid;
 	pthread_t tid;
+
+	FILE *fp;
 
 	pid = getpid();
 	tid = pthread_self();
 
 	printf("[send_thread] pid: %u, tid:%x \n", (unsigned int)pid, (unsigned int)tid);
 	
-	gconn.send_sockfd = accept(gconn.recv_sockfd, 
-		(struct sockaddr*)&gconn.recvaddr, (socklen_t *)&gconn.recv_addr_len);
+	//while(1) 
+	//{
+
+		gconn.send_sockfd[sock_cnt] = accept(gconn.recv_sockfd, 
+			(struct sockaddr*)&gconn.recvaddr, (socklen_t *)&gconn.recv_addr_len);
 	
-	if(gconn.send_sockfd == FAIL)
-	{
-		printf("accept failed (ret:%d)(errno:%d) \n", gconn.send_sockfd, errno);
-		exit_process = 1;
-	}
-
-	while(!exit_process)
-	{
-		printf("Listening... %d \n", gconn.send_sockfd);
-
-		read(gconn.send_sockfd, gconn.buffer, BUF_LEN);
-		
-		printf("recv buf: %s ", gconn.buffer);
-		
-		if(!strcmp(gconn.buffer, "exit")) {
-			exit_process = 1;
-			break;
-		}
-
-		if(exit_process)
+		if(gconn.send_sockfd[sock_cnt] == FAIL)
 		{
-			printf("exit send_thread: %d\n", exit_process);
-			break;
+			printf("accept failed (ret:%d)(errno:%d) \n", gconn.send_sockfd[sock_cnt], errno);
+			exit_process = 1;
 		}
 
-		printf("Connected Client \n");
-	}
+		while(!exit_process)
+		{
+			printf("Listening... %d \n", gconn.send_sockfd[sock_cnt]);
+
+			read(gconn.send_sockfd[sock_cnt], gconn.buffer, BUF_LEN);
+			
+			printf("recv buf: %s ", gconn.buffer);
+			
+			if(!strcmp(gconn.buffer, "exit\n")) {
+				exit_process = 1;
+				break;
+			}else if(!strcmp(gconn.buffer, "ls\n")) {
+				//system("ls");
+				
+				fp = popen("ls", "r");
+				if(NULL == fp){
+					perror("popen() failed");
+					exit_process = 1;
+				}
+
+				fread((void*)gconn.send_buf, sizeof(char), BUF_LEN, fp);
+				printf("%s", gconn.send_buf);
+
+				pclose(fp);
+				
+
+				/*
+				while(fgets(gconn.send_buf, BUF_LEN, fp))
+				{
+					printf("%s", gconn.send_buf);
+				}
+				*/
+				
+				//fgets(gconn.send_buf, BUF_LEN, fp);
+				//getcwd(gconn.send_buf, BUF_LEN);
+				write(gconn.send_sockfd[sock_cnt], gconn.send_buf, BUF_LEN);
+				
+			}else if(!strncmp(gconn.buffer, "cd", 2)) {
+			//}else if(!strcmp(gconn.buffer, "cd")) {
+				printf("cd! %s \n", gconn.buffer);
+				//system(gconn.buffer);
+				//system("cd ..");
+				if(chdir(gconn.buffer + 3) == 0)
+					write(gconn.send_sockfd[sock_cnt], "1", BUF_LEN);
+				
+			}else if (!strcmp(gconn.buffer, "pwd\n")) {
+			
+				getcwd(gconn.send_buf, BUF_LEN);
+				write(gconn.send_sockfd[sock_cnt], gconn.send_buf, BUF_LEN);
+			}
+			
+
+			if(exit_process)
+			{
+				printf("exit send_thread: %d\n", exit_process);
+				break;
+			}
+
+			printf("Connected Client %d \n", exit_process);
+		}
+
+		close_socket();
+		exit_process = 0;
+		sock_cnt++;
+	//}
+	
 	
 	pthread_exit(NULL);
 }
@@ -162,7 +213,7 @@ int main(int argc, char **argv)
 		switch(c) {
 			case 'h':
 			print_info();
-			return OK;
+			exit(0);
 			break;
 			case 'p':
 			gconn.port = atoi(optarg);

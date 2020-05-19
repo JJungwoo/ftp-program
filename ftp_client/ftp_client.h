@@ -6,6 +6,8 @@
 #define FAIL -1
 #define OK 0
 
+#define DEF_PORT 9999
+
 typedef struct pear_conn_st{
 	// server 
 	int recv_sockfd;

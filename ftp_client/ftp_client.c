@@ -98,7 +98,7 @@ int main(int argc, char **argv)
 	if(option == 0)
 	{
 		//print_info();
-		gconn.port = 9999;
+		gconn.port = DEF_PORT;
 		terminal_mode = 1;
 		//exit(0);
 	}
@@ -131,27 +131,30 @@ int main(int argc, char **argv)
 		printf("Connected Success \n");
 	}
 
+	//write(gconn.recv_sockfd, "client enrol\n", BUF_LEN);
 
 	if(terminal_mode){
 		while(!exit_process) {
 			printf("ftp>");
 			fgets(cmdbuf, BUF_LEN, stdin);
+			write(gconn.recv_sockfd, cmdbuf, BUF_LEN);
 			//fprintf(stderr, "ftp>%s \n", cmdbuf);
 			if(!strcmp(cmdbuf, "exit\n") || !strcmp(cmdbuf, "quit\n")){
 				exit_process = 1;
+				break;
 			}else if(!strcmp(cmdbuf, "get\n")){	// 파일 다운
-				printf("get! %s\n", cmdbuf);
-				fgets(cmdbuf, BUF_LEN, stdin);
-				send(gconn.recv_sockfd, cmdbuf, strlen(gconn.buffer), 0);
-				send(gconn.recv_sockfd, "test1", strlen(gconn.buffer), 0);
-				send(gconn.recv_sockfd, "test2", strlen(gconn.buffer), 0);
+				printf("get\n");
+				//fgets(cmdbuf, BUF_LEN, stdin);
 
+				//send(gconn.recv_sockfd, cmdbuf, strlen(gconn.buffer), 0);
 			}else if(!strcmp(cmdbuf, "put\n")){	// 파일 업로드
 
 			}else if(!strcmp(cmdbuf, "pwd\n")){
-
+				read(gconn.recv_sockfd, gconn.buffer, BUF_LEN);
+				printf("recv buf: \n %s ", gconn.buffer);
 			}else if(!strcmp(cmdbuf, "ls\n")){
-				
+				read(gconn.recv_sockfd, gconn.buffer, BUF_LEN);
+				printf("recv buf: \n %s ", gconn.buffer);
 			}else if(!strcmp(cmdbuf, "cd\n")){
 				
 			}else if(!strcmp(cmdbuf, "help\n")){
