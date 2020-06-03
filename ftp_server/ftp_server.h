@@ -22,6 +22,9 @@ typedef struct ftp_conn_st{
 
 	char buffer[BUF_LEN];
 	char send_buf[BUF_LEN];
+
+	FILE *fp;
+
 }conn;
 
 void close_socket();

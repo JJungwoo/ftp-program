@@ -23,17 +23,16 @@ int exit_process;
 void print_info()
 {
 	static const char *help = 
-	"================================ \n"
-	"|          ftp server          | \n"
-	"================================ \n"
-	"usage: ftp-server [-option] \n"
-	"-h : Help to ftp server usage \n"
+	"==================================== \n"
+	"|            ftp server            | \n"
+	"==================================== \n"
+	"usage: ftp-server [-option] [value] \n"
+	"-H : Help to ftp server usage \n"
 	"-v : Confirm to ftp server version \n"
-	"-d : Execute to ftp server daemon \n"
-	"-c : Create to ftp server user \n"
 	"-p : Setting ftp server port \n";
 
 	fputs(help, stdout);
+	exit(0);
 }
 
 void *send_thread(void *data)
@@ -50,8 +49,7 @@ void *send_thread(void *data)
 	printf("[send_thread] pid: %u, tid:%x \n", (unsigned int)pid, (unsigned int)tid);
 	
 	//while(1) 
-	//{
-
+	{
 		gconn.send_sockfd[sock_cnt] = accept(gconn.recv_sockfd, 
 			(struct sockaddr*)&gconn.recvaddr, (socklen_t *)&gconn.recv_addr_len);
 	
@@ -63,11 +61,10 @@ void *send_thread(void *data)
 
 		while(!exit_process)
 		{
-			printf("Listening... %d \n", gconn.send_sockfd[sock_cnt]);
-
+			//printf("Listening... %d \n", gconn.send_sockfd[sock_cnt]);
 			read(gconn.send_sockfd[sock_cnt], gconn.buffer, BUF_LEN);
 			
-			printf("recv buf: %s ", gconn.buffer);
+			//printf("recv buf: %s ", gconn.buffer);
 			
 			if(!strcmp(gconn.buffer, "exit\n")) {
 				exit_process = 1;
@@ -85,7 +82,6 @@ void *send_thread(void *data)
 				printf("%s", gconn.send_buf);
 
 				pclose(fp);
-				
 
 				/*
 				while(fgets(gconn.send_buf, BUF_LEN, fp))
@@ -110,6 +106,12 @@ void *send_thread(void *data)
 			
 				getcwd(gconn.send_buf, BUF_LEN);
 				write(gconn.send_sockfd[sock_cnt], gconn.send_buf, BUF_LEN);
+			}else if(!strcmp(gconn.buffer, "get\n")) {
+				
+				
+			}else if(!strcmp(gconn.buffer, "put\n")) {
+				
+				
 			}
 			
 
@@ -119,14 +121,13 @@ void *send_thread(void *data)
 				break;
 			}
 
-			printf("Connected Client %d \n", exit_process);
+			//printf("Connected Client Status: %d \n", exit_process);
 		}
 
 		close_socket();
 		exit_process = 0;
-		sock_cnt++;
-	//}
-	
+		//sock_cnt++;
+	}
 	
 	pthread_exit(NULL);
 }
@@ -169,7 +170,7 @@ int create_conn_st()
 	memset(&gconn.recvaddr, 0, sizeof(gconn.recvaddr));
 	gconn.recvaddr.sin_family = AF_INET;
 	gconn.recvaddr.sin_port = htons(gconn.port);
-	gconn.recvaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	//gconn.recvaddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	//gconn.recvaddr.sin_addr.s_addr = htonl(atoi("127.0.0.1"));
 
 	gconn.recv_addr_len = sizeof(gconn.sendaddr);
@@ -209,15 +210,18 @@ int main(int argc, char **argv)
 	int ret = 0, c = 0; 
 	int option = 0;
 
-	while((c = getopt(argc, argv, "hp:")) != -1) {
+	while((c = getopt(argc, argv, "Hp:")) != -1) {
 		switch(c) {
-			case 'h':
+			case 'H':
 			print_info();
-			exit(0);
 			break;
 			case 'p':
 			gconn.port = atoi(optarg);
 			option = 1;
+			break;
+			case '?':
+			printf("command not found \n");
+			exit(0);
 			break;
 		}
 	}
@@ -239,8 +243,7 @@ int main(int argc, char **argv)
 */
 	if(option == 0)
 	{
-		print_info();
-		exit(0);
+		gconn.port = DEF_PORT;
 	}
 
 	signal(SIGINT, signal_handler);
