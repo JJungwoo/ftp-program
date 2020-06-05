@@ -18,7 +18,8 @@ conn gconn;
 int terminal_mode;
 int exit_process;
 
-void print_info()
+static void 
+print_info()
 {
 	static const char *help = 
 	"===================================== 	\n"
@@ -28,14 +29,23 @@ void print_info()
 	"-H : Help to ftp client usage 			\n"
 	"-v : Confirm to ftp client version 	\n"
 	"-c : Create to ftp user 				\n"
+	"-C : Set command mode 					\n"
 	"-p : Setting ftp target server port	\n"
+	"-d : Set Debug message					\n"
 	"-h : Setting ftp target server ip		\n";
 
-	fputs(help, stdout);
+	fprintf(stderr, help);
 	exit(0);
 }
 
-int create_socket()
+static int 
+parse_dispatch_command()
+{
+
+}
+
+int 
+create_socket()
 {
 	int ret = 0;
 	int opt_val = 1;
@@ -51,7 +61,8 @@ int create_socket()
 	return ret;
 }
 
-int create_conn_st()
+int 
+create_conn_st()
 {
 	int ret = 0;
 
@@ -73,25 +84,34 @@ int create_conn_st()
 	return ret;
 }
 
-void close_process()
+static void 
+connect_to_server()
+{
+
+}
+
+void 
+close_process()
 {
 	close(gconn.recv_sockfd);
 }
 
-void signal_handler(int signo)
+void 
+signal_handler(int signo)
 {
 	printf("signal_hander \n");
 	signal(SIGINT, SIG_DFL);
 	close_process();
 }
 
-int main(int argc, char **argv)
+int 
+main(int argc, char **argv)
 {
-	int ret = 0, c = 0; 
+	int ret = 0, c = 0, C_flag = 0, D_flag; 
 	int option = 0;
 	char filename[1024] = "\0";
 
-	while((c = getopt(argc, argv, "Hph:")) != -1) 
+	while((c = getopt(argc, argv, "HCphd:")) != -1) 
 	{
 		switch(c) 
 		{
@@ -100,11 +120,15 @@ int main(int argc, char **argv)
 			break;
 			case 'p':
 			gconn.port = atoi(optarg);
-			option = 1;
 			break;
 			case 'h':
 			strcpy(gconn.ip, optarg);
-			option = 1;
+			break;
+			case 'C':
+			C_flag = 1;
+			break;
+			case 'd':
+			D_flag = 1;
 			break;
 			case '?':
 			printf("command not found \n");
@@ -113,10 +137,10 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if(option == 0) {
+	if(C_flag) {
 		//print_info();
 		//gconn.port = DEF_PORT;
-		terminal_mode = 1;
+		goto command_mode;
 	}
 
 	signal(SIGINT, signal_handler);
@@ -147,45 +171,61 @@ int main(int argc, char **argv)
 
 	//write(gconn.recv_sockfd, "client enrol\n", BUF_LEN);
 
-	if(terminal_mode) 
+	
+	while(!exit_process) 
 	{
-		while(!exit_process) 
-		{
 
-			printf("ftp>");
-			fgets(cmdbuf, BUF_LEN, stdin);
-			
-			write(gconn.recv_sockfd, cmdbuf, BUF_LEN);
-			//fprintf(stderr, "ftp>%s \n", cmdbuf);
-
-			if(!strcmp(cmdbuf, "exit\n") || !strcmp(cmdbuf, "quit\n")){
-				exit_process = 1;
-				break;
-			}else if(!strcmp(cmdbuf, "get\n")){		// file download
-				printf("input file name: \n");
-				fgets(filename, 1024, stdin);
-
-				read(gconn.recv_sockfd, gconn.buffer, BUF_LEN);
-				
-			}else if(!strcmp(cmdbuf, "put\n")){		// file upload
-
-			}else if(!strcmp(cmdbuf, "pwd\n")){
-				read(gconn.recv_sockfd, gconn.buffer, BUF_LEN);
-				printf("recv buf: \n %s ", gconn.buffer);
-			}else if(!strcmp(cmdbuf, "ls\n")){
-				read(gconn.recv_sockfd, gconn.buffer, BUF_LEN);
-				printf("recv buf: \n %s ", gconn.buffer);
-			}else if(!strcmp(cmdbuf, "cd\n")){
-				
-			}else if(!strcmp(cmdbuf, "help\n")){
-				
-			}
+		printf("ftp> ");
+		//if(fgets(cmdbuf, BUF_LEN, stdin) == NULL) {
+		if(fgets(cmdbuf, BUF_LEN, stdin) == NULL) {
+			break;
 		}
-	}
-	else // command mode
-	{
+		
+		
+		cmdbuf[strcspn(cmdbuf, "\n")] = '\0';
 
+		if(D_flag)
+			printf("cmdbuf: %s\n", cmdbuf);
+
+
+		write(gconn.recv_sockfd, cmdbuf, BUF_LEN);
+		//fprintf(stderr, "ftp>%s \n", cmdbuf);
+
+		if(!strcmp(cmdbuf, "exit") || !strcmp(cmdbuf, "quit")){
+			exit_process = 1;
+			break;
+		}else if(!strcmp(cmdbuf, "get")){		// file download
+			printf("input file name: \n");
+			//fgets(filename, 1024, stdin);
+			
+			//read(gconn.recv_sockfd, gconn.buffer, BUF_LEN);
+			
+		}else if(!strcmp(cmdbuf, "put")){		// file upload
+			
+
+		}else if(!strcmp(cmdbuf, "pwd")){
+			read(gconn.recv_sockfd, gconn.buffer, BUF_LEN);
+			printf("recv buf: \n %s ", gconn.buffer);
+		}else if(!strcmp(cmdbuf, "ls")){
+			read(gconn.recv_sockfd, gconn.buffer, BUF_LEN);
+			printf("recv buf: \n %s ", gconn.buffer);
+		}else if(!strcmp(cmdbuf, "cd")){
+			
+		}else if(!strcmp(cmdbuf, "help")){
+			
+		}
+
+		//parse_dispatch_command();
+		
+		if(ret == FAIL)
+			break;
 	}
+
+	close_process();
+
+command_mode:
+
+	printf("command_mode\n");
 	
 	close_process();
 

@@ -27,4 +27,18 @@ typedef struct ftp_conn_st{
 
 }conn;
 
+struct ftp_handler {
+	const char *name;
+	u_int type;
+	void (*handler)(u_int32_t);
+};
+
+static const struct ftp_handler handlers[] = {
+	{""}
+};
+
 void close_socket();
+
+
+
+

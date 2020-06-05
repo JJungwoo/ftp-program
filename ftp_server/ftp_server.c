@@ -13,6 +13,7 @@
 #include <errno.h>
 
 #include "ftp_server.h"
+#include "ftp_func.h"
 
 conn gconn;
 
@@ -20,18 +21,18 @@ pthread_t p_thread;
 int thr_id;
 int exit_process;
 
-void print_info()
+static void print_info()
 {
 	static const char *help = 
-	"==================================== \n"
-	"|            ftp server            | \n"
-	"==================================== \n"
-	"usage: ftp-server [-option] [value] \n"
-	"-H : Help to ftp server usage \n"
-	"-v : Confirm to ftp server version \n"
-	"-p : Setting ftp server port \n";
+	"==================================== 	\n"
+	"|            ftp server            | 	\n"
+	"==================================== 	\n"
+	"usage: ftp-server [-option] [value] 	\n"
+	"-H : Help to ftp server usage 			\n"
+	"-v : Confirm to ftp server version 	\n"
+	"-p : Setting ftp server port 			\n";
 
-	fputs(help, stdout);
+	fprintf(stderr, help);
 	exit(0);
 }
 
@@ -66,10 +67,10 @@ void *send_thread(void *data)
 			
 			//printf("recv buf: %s ", gconn.buffer);
 			
-			if(!strcmp(gconn.buffer, "exit\n")) {
+			if(!strcmp(gconn.buffer, "exit")) {
 				exit_process = 1;
 				break;
-			}else if(!strcmp(gconn.buffer, "ls\n")) {
+			}else if(!strcmp(gconn.buffer, "ls")) {
 				//system("ls");
 				
 				fp = popen("ls", "r");
@@ -102,14 +103,14 @@ void *send_thread(void *data)
 				if(chdir(gconn.buffer + 3) == 0)
 					write(gconn.send_sockfd[sock_cnt], "1", BUF_LEN);
 				
-			}else if (!strcmp(gconn.buffer, "pwd\n")) {
+			}else if (!strcmp(gconn.buffer, "pwd")) {
 			
 				getcwd(gconn.send_buf, BUF_LEN);
 				write(gconn.send_sockfd[sock_cnt], gconn.send_buf, BUF_LEN);
-			}else if(!strcmp(gconn.buffer, "get\n")) {
-				
-				
-			}else if(!strcmp(gconn.buffer, "put\n")) {
+			}else if(strstr(gconn.buffer, "get")) {
+				printf("Get: %s \n", gconn.buffer);
+				get_file(gconn.buffer);
+			}else if(!strcmp(gconn.buffer, "put")) {
 				
 				
 			}
@@ -209,6 +210,7 @@ int main(int argc, char **argv)
 {
 	int ret = 0, c = 0; 
 	int option = 0;
+	pid_t pid;
 
 	while((c = getopt(argc, argv, "Hp:")) != -1) {
 		switch(c) {
@@ -261,6 +263,40 @@ int main(int argc, char **argv)
 		printf("create_conn_st failed (ret:%d) \n", ret);
 		exit(0);
 	}
+
+	// log_open
+
+/*
+	pid = fork();
+	if (pid == -1) {
+		perror("fork");
+		cleanup_exit(1);
+	}
+	if (pid != 0) {		
+		close(sock);
+		snprintf(pidstrbuf, sizeof pidstrbuf, "%ld", (long)pid);
+		if (ac == 0) {
+			format = c_flag ? "setenv %s %s;\n" : "%s=%s; export %s;\n";
+			printf(format, SSH_AUTHSOCKET_ENV_NAME, socket_name,
+			    SSH_AUTHSOCKET_ENV_NAME);
+			printf(format, SSH_AGENTPID_ENV_NAME, pidstrbuf,
+			    SSH_AGENTPID_ENV_NAME);
+			printf("echo Agent pid %ld;\n", (long)pid);
+			exit(0);
+		}
+		if (setenv(SSH_AUTHSOCKET_ENV_NAME, socket_name, 1) == -1 ||
+		    setenv(SSH_AGENTPID_ENV_NAME, pidstrbuf, 1) == -1) {
+			perror("setenv");
+			exit(1);
+		}
+		execvp(av[0], av);
+		perror(av[0]);
+		exit(1);
+	}
+*/
+
+	// log_init
+
 
 	run_process();	
 		
