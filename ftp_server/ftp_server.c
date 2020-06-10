@@ -42,9 +42,9 @@ void *send_thread(void *data)
 	int sock_cnt = 0;
 	pid_t pid;
 	pthread_t tid;
-	int size = 0;
+	int size = 0, ret = 0;
 
-	char *msg = "\0";
+	char msg[1024] = "\0";
 
 	FILE *fp;
 
@@ -100,15 +100,17 @@ void *send_thread(void *data)
 				write(gconn.send_sockfd[sock_cnt], gconn.send_buf, BUF_LEN);
 				
 			}else if(!strncmp(gconn.buffer, "cd", 2)) {
-			//}else if(!strcmp(gconn.buffer, "cd")) {
 				printf("cd! %s \n", gconn.buffer);
-				//system(gconn.buffer);
-				//system("cd ..");
-				//if(chdir(gconn.buffer + 3) == 0)
-				//	write(gconn.send_sockfd[sock_cnt], "1", BUF_LEN);
 				
-				parse_cmd(gconn.buffer, msg);
+				ret = parse_cmd(gconn.buffer, msg);
+				if(ret < 0){
+					printf("parse_cmd has failed \n");
+					close_socket();
+				}
 				printf("cmd : %s, parsing : %s \n", gconn.buffer , msg);
+				
+				chdir(msg);
+
 			}else if (!strcmp(gconn.buffer, "pwd")) {
 				getcwd(gconn.send_buf, BUF_LEN);
 				write(gconn.send_sockfd[sock_cnt], gconn.send_buf, BUF_LEN);
@@ -177,8 +179,6 @@ int create_conn_st()
 	memset(&gconn.recvaddr, 0, sizeof(gconn.recvaddr));
 	gconn.recvaddr.sin_family = AF_INET;
 	gconn.recvaddr.sin_port = htons(gconn.port);
-	//gconn.recvaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	//gconn.recvaddr.sin_addr.s_addr = htonl(atoi("127.0.0.1"));
 
 	gconn.recv_addr_len = sizeof(gconn.sendaddr);
 
@@ -234,21 +234,6 @@ int main(int argc, char **argv)
 		}
 	}
 
-/*
-	for(int i=0;i<argc;i++)
-	{
-		if(*argv[i] == '-')
-		{
-			switch(*(argv[i]+1))
-			{
-				case 'h':
-				print_info();
-				return OK;
-				break;
-			}
-		}		
-	}
-*/
 	if(option == 0)
 	{
 		gconn.port = DEF_PORT;

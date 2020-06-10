@@ -13,6 +13,7 @@
 #include <errno.h>
 
 #include "ftp_client.h"
+#include "common.h"
 
 conn gconn;
 int terminal_mode;
@@ -93,6 +94,7 @@ connect_to_server()
 void 
 close_process()
 {
+	exit_process = 1;
 	close(gconn.recv_sockfd);
 }
 
@@ -239,6 +241,7 @@ main(int argc, char **argv)
 			printf("recv buf: \n %s ", gconn.buffer);
 		}else if(!strcmp(cmdbuf, "cd")){
 			
+
 		}else if(!strcmp(cmdbuf, "help")){
 			
 		}

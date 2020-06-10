@@ -12,17 +12,20 @@ parse_cmd(char *cmd, char *msg)
 	int size = 0, count = 0;
 
 	// command parsing
-	printf("data: %d %s \n", len, cmd);
+	printf("parse_cmd \n data: %d %s \n", len, cmd);
 	char *data = strstr(cmd, " ");
 	*data++;
 	if(*data == NULL) {
 		printf("parse_cmd has failed\n");
 		return -1;
 	}
-	printf("path: %s \n", data);
-
-	msg = (char *)malloc(strlen(data));
+	printf("path: %s (%d) \n", data, strlen(data));
+	
+	printf("data: %s, msg %s \n", data, msg);
+	//msg = (char *)malloc(strlen(data)+1);
+	//strcpy(data, msg);
 	strcpy(msg, data);
+	printf("data: %s, msg %s \n", data, msg);
 	return 0;
 }
 

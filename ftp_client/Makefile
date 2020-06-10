@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -pthread
+CFLAGS = -I../common/ -I./ -pthread
 TARGET = ftp_client 
 
 SRC = ftp_client.c
