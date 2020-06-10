@@ -104,6 +104,34 @@ signal_handler(int signo)
 	close_process();
 }
 
+
+int  
+do_download(char *path)
+{
+    FILE *fp;
+    int ret = 0;
+    int size = 0, count = 0;
+
+    printf("path: %s \n", strlen(path));
+    
+    //fp = open(path,  O_RDONLY || O_CREAT || O_EXCL, 0644);
+    fp = fopen("test.txt", "w");
+    if(0 > fp){
+        printf("file open failed\n");
+        close(fp);
+    }
+    
+    fseek(fp, 0, SEEK_END);
+    size = ftell(fp);
+    memset(path, 0, size + 1);
+    path = (char*)malloc(size);
+    count = fread(path, size, 1, fp);
+
+    fclose(fp);
+    return size;
+}
+
+
 int 
 main(int argc, char **argv)
 {
@@ -198,8 +226,8 @@ main(int argc, char **argv)
 			printf("input file name: \n");
 			//fgets(filename, 1024, stdin);
 			
-			//read(gconn.recv_sockfd, gconn.buffer, BUF_LEN);
-			
+			read(gconn.recv_sockfd, gconn.buffer, BUF_LEN);
+
 		}else if(!strcmp(cmdbuf, "put")){		// file upload
 			
 

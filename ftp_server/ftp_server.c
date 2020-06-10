@@ -14,6 +14,7 @@
 
 #include "ftp_server.h"
 #include "ftp_func.h"
+#include "common.h"
 
 conn gconn;
 
@@ -41,6 +42,9 @@ void *send_thread(void *data)
 	int sock_cnt = 0;
 	pid_t pid;
 	pthread_t tid;
+	int size = 0;
+
+	char *msg = "\0";
 
 	FILE *fp;
 
@@ -100,19 +104,21 @@ void *send_thread(void *data)
 				printf("cd! %s \n", gconn.buffer);
 				//system(gconn.buffer);
 				//system("cd ..");
-				if(chdir(gconn.buffer + 3) == 0)
-					write(gconn.send_sockfd[sock_cnt], "1", BUF_LEN);
+				//if(chdir(gconn.buffer + 3) == 0)
+				//	write(gconn.send_sockfd[sock_cnt], "1", BUF_LEN);
 				
+				parse_cmd(gconn.buffer, msg);
+				printf("cmd : %s, parsing : %s \n", gconn.buffer , msg);
 			}else if (!strcmp(gconn.buffer, "pwd")) {
-			
 				getcwd(gconn.send_buf, BUF_LEN);
 				write(gconn.send_sockfd[sock_cnt], gconn.send_buf, BUF_LEN);
 			}else if(strstr(gconn.buffer, "get")) {
 				printf("Get: %s \n", gconn.buffer);
-				get_file(gconn.buffer);
+				size = get_file(gconn.buffer, gconn.send_buf);
+				write(gconn.send_sockfd[sock_cnt], gconn.send_buf, size);
 			}else if(!strcmp(gconn.buffer, "put")) {
-				
-				
+				printf("Put: %s \n", gconn.buffer);
+				put_file(gconn.buffer, gconn.send_buf);
 			}
 			
 

@@ -1,4 +1,8 @@
 
+#include <sys/socket.h> 
+#include <netinet/in.h> 
+#include <netinet/ip.h>
+
 #define BUF_LEN 1024
 
 // function failed
